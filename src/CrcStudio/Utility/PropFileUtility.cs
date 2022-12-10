@@ -57,6 +57,43 @@ namespace CrcStudio.Utility
                 content = content.Substring(0, pos) + value + content.Substring(eol);
             }
             using (
+                FileStream stream = File.Open(fileSystemPath, FileMode.Create, FileAccess.Write | FileAccess.Read,
+                                              FileShare.Delete | FileShare.ReadWrite))
+
+        public static void SetProp(string fileSystemPath, string propertyName, string value)
+        {
+            if (!File.Exists(fileSystemPath)) return;
+            if (new FileInfo(fileSystemPath).Length == 0) return;
+            Encoding encoding = Encoding.UTF8;
+            string content;
+            byte[] byteOrderMark;
+            using (
+                FileStream stream = File.Open(fileSystemPath, FileMode.Open, FileAccess.Read,
+                                              FileShare.Delete | FileShare.ReadWrite))
+            {
+                encoding = stream.DetectEncoding(out byteOrderMark);
+                using (var reader = new StreamReader(stream, encoding))
+                {
+                    content = reader.ReadToEnd();
+                }
+            }
+            if (string.IsNullOrWhiteSpace(content)) return;
+            string newLineChar = FileUtility.DetectEndOfLine(content);
+            int pos = content.IndexOf(propertyName, StringComparison.Ordinal);
+            if (pos == -1) return;
+            pos = content.IndexOf("=", pos, StringComparison.Ordinal);
+            if (pos == -1) return;
+            pos++;
+            int eol = content.IndexOf(newLineChar, pos, StringComparison.Ordinal);
+            if (eol == -1)
+            {
+                content = content.Substring(0, pos) + value;
+            }
+            else
+            {
+                content = content.Substring(0, pos) + value + content.Substring(eol);
+            }
+            using (
                 FileStream stream = File.Open(fileSystemPath, FileMode.Create, FileAccess.Write,
                                               FileShare.Delete | FileShare.ReadWrite))
             {
