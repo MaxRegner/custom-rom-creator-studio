@@ -95,6 +95,88 @@ namespace CrcStudio.Utility
             CreateMenu();
         }
 
+        public void Add(string file)
+        {
+            if (string.IsNullOrWhiteSpace(file)) return;
+            file = Path.GetFullPath(file);
+            if (!File.Exists(file)) return;
+            if (_mruFiles.Contains(file))
+            {
+                _mruFiles.Remove(file);
+                _mruFiles.Insert(0, file);
+            }
+            else
+            {
+                _mruFiles.Insert(0, file);
+            }
+            while (_mruFiles.Count > _maxItemsSaved)
+            {
+                _mruFiles.RemoveAt(_mruFiles.Count - 1);
+            }
+            Save();
+        }
+
+        private void Save()
+
+        public string Name { get; private set; }
+        public int NumberOfItems { get; set; }
+        public bool Visible { get { return _mruFiles.Count > 0; } }
+
+        private void CreateMenu()
+        {
+            _menuStripItem.DropDownItems.Clear();
+            if (_mruFiles.Count == 0)
+            {
+                _menuStripItem.Visible = false;
+                return;
+            }
+            _menuStripItem.Visible = true;
+            int count = 1;
+            foreach (string file in _mruFiles)
+            {
+                if (!File.Exists(file)) continue;
+                CreateMenuItem(file);
+                count++;
+                if (count >= NumberOfItems) break;
+            }
+            CreateMenuItem(ClearItemsText);
+        }
+
+        private void CreateMenuItem(string file)
+        {
+            var item = new ToolStripMenuItem(CreateMenuText(file));
+            item.Tag = file;
+            item.Click += ItemClick;
+            _menuStripItem.DropDownItems.Add(item);
+        }
+
+        private string CreateMenuText(string file)
+        {
+            return FileUtility.ShortFilePath(file, 70);
+        }
+
+        private void ItemClick(object sender, EventArgs e)
+        {
+            var item = sender as ToolStripMenuItem;
+            if (item == null) return;
+            var file = item.Tag as string;
+            if (file == ClearItemsText)
+            {
+                _mruFiles.Clear();
+                Save();
+                return;
+            }
+            if (_callbackMethod != null && !string.IsNullOrWhiteSpace(file))
+            {
+                _callbackMethod(this, file);
+            }
+        }
+
+        private void MenuStripItemDropDownOpening(object sender, EventArgs e)
+        {
+            CreateMenu();
+        }
+
         private void Save()
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_fileName));
