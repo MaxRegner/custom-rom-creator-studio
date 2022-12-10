@@ -108,6 +108,37 @@ namespace CrcStudio.Utility
             }
         }
 
+        public static void MoveRecursive(string sourceLocation, string targetLocation, Func<string, FileExistsAction> fileExistCallBack)
+        {
+            var filesToCopy = new Dictionary<string, string>();
+            var folderStack = new Stack<string>();
+
+            Directory.CreateDirectory(targetLocation);
+            folderStack.Push(sourceLocation);
+
+            while (folderStack.Count > 0)
+            {
+                string folder = folderStack.Pop();
+                foreach (string subFolder in Directory.GetDirectories(folder))
+                {
+                    string folderName = subFolder.Replace(sourceLocation, "").TrimStart(Path.DirectorySeparatorChar);
+                    Directory.CreateDirectory(Path.Combine(targetLocation, folderName));
+                    folderStack.Push(subFolder);
+                }
+                foreach (string file in Directory.GetFiles(folder))
+                {
+                    string fileName = file.Replace(sourceLocation, "").TrimStart(Path.DirectorySeparatorChar);
+                    filesToCopy.Add(file, Path.Combine(targetLocation, fileName));
+                }
+            }
+            bool replace;
+            bool replaceAll = false;
+            foreach (var sourceFile in filesToCopy.Keys)
+            {
+                replace = false;
+                var destFileName = filesToCopy[sourceFile];
+                var exists = File.Exists(destFileName );
+
         public static bool Empty(string path)
         {
             if (!Directory.Exists(path)) return true;
@@ -183,6 +214,31 @@ namespace CrcStudio.Utility
             }
             return false;
         }
+
+        public static IEnumerable<string> GetDirectoriesRecursively(string fullPath, params string[] excludePatterns)
+        {
+            var items = new List<string>();
+            var folderStack = new Stack<string>();
+            folderStack.Push(fullPath);
+
+            while (folderStack.Count > 0)
+            {
+                string folder = folderStack.Pop();
+                if (IsSystemFolder(folder)) continue;
+                string[] subFolders = Directory.GetDirectories(folder);
+                foreach (string subFolder in subFolders)
+                {
+                    if (ExcludePatternMatched(excludePatterns, subFolder)) continue;
+                    items.Add(subFolder);
+                    folderStack.Push(subFolder);
+                }
+            }
+            return items;
+        }
+
+        public static bool IsSystemFolder(string fullPath)
+        {
+            if (string.IsNullOrEmpty(fullPath)) return true; //throw new ArgumentNullException("fullPath");
 
         public static string GetRootedPath(string folderPath, string filePath)
         {
